@@ -11,5 +11,55 @@ variable "environment" {
 }
 
 variable "public_subnet_cidrs" {
-  
+  type = list(string)
+}
+
+variable "private_subnet_cidrs" {
+  type = list(string)
+}
+
+variable "database_subnet_cidrs" {
+  type = list(string)
+}
+
+variable "vpc_tags" {
+  type = list(string)
+  default = {
+  }
+}
+
+variable "igw_tags" {
+  type = list(string)
+  default = {
+  }
+}
+
+variable "public_subnet_tags" {
+  type = list(string)
+  default = {
+  }
+}
+
+variable "private_subnet_tags" {
+  type = list(string)
+  default = {
+  }
+}
+
+variable "database_subnet_tags" {
+  type = list(string)
+  default = {
+  }
+}
+
+variable "eip_tags" {
+  type = list(string)
+  default = {
+  }
+}
+
+variable "nat_gateway_tags" {
+  type = list(string)
+  default = {
+  }
 }

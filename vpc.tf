@@ -6,8 +6,9 @@ resource "aws_vpc" "main" {
   enable_dns_hostnames = "true"
 
   tags = merge(
-    local.common_tags,{
-        Name = "${var.project}-${var.environment}"
+  var.vpc_tags,
+  local.common_tags,{
+    Name = "${var.project}-${var.environment}"
     }
   )
 }
@@ -18,8 +19,9 @@ resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id #association with VPC
 
   tags = merge(
-    local.common_tags,{
-        Name = "${var.project}-${var.environment}"
+  var.igw_tags,
+  local.common_tags,{
+    Name = "${var.project}-${var.environment}"
     }
   )
 }
@@ -34,8 +36,63 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = merge(
-    local.common_tags,{
-        Name = "${var.project}-${var.environment}-public-${local.az_names[count.index]}"
+  var.public_subnet_tags,
+  local.common_tags,{
+    Name = "${var.project}-${var.environment}-public-${local.az_names[count.index]}"
     }
   )
 } 
+
+resource "aws_subnet" "private" {
+  count = length(var.private_subnet_cidrs)
+  vpc_id     = aws_vpc.main.id
+  cidr_block = var.private_subnet_cidrs[count.index]
+  availability_zone = local.az_names[count.index]
+
+  tags = merge(
+  var.private_subnet_tags,
+  local.common_tags,{
+    Name = "${var.project}-${var.environment}-private-${local.az_names[count.index]}"
+    }
+  )
+}
+
+resource "aws_subnet" "database" {
+  count = length(var.database_subnet_cidrs)
+  vpc_id     = aws_vpc.main.id
+  cidr_block = var.database_subnet_cidrs[count.index]
+  availability_zone = local.az_names[count.index]
+
+  tags = merge(
+  var.database_subnet_tags,
+  local.common_tags,{
+    Name = "${var.project}-${var.environment}-database-${local.az_names[count.index]}"
+    }
+  )
+}
+
+resource "aws_eip" "nat" {
+  domain   = "vpc"
+  tags = merge(
+  var.database_subnet_tags,
+  local.common_tags,{
+    Name = "${var.project}-${var.environment}-database-${local.az_names[count.index]}"
+  }
+  )
+}
+
+resource "aws_nat_gateway" "example" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public[0].id
+
+   tags = merge(
+    var.nat_gateway_tags,
+    local.common_tags,{
+      Name = "${var.project}-${var.environment}-database-${local.az_names[count.index]}"
+    }
+  )
+
+  # To ensure proper ordering, it is recommended to add an explicit dependency
+  # on the Internet Gateway for the VPC.
+  depends_on = [aws_internet_gateway.main]
+}
